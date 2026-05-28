@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EC2 creada desde GitHub Actions Roxana
+Description: EC2 con HTTP visible en navegador
 
 Resources:
 
@@ -10,7 +10,43 @@ Resources:
       ImageId: ami-0cca150d127c2216f
       InstanceType: t3.micro
 
+      SecurityGroups:
+        - !Ref MySecurityGroup
+
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl enable httpd
+          systemctl start httpd
+          echo "<h1>FUNCIONA EN EL NAVEGADOR 🚀</h1>" > /var/www/html/index.html
+
       Tags:
         - Key: Name
           Value: EC2-GitHubActions
 
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permitir HTTP y SSH
+
+      SecurityGroupIngress:
+
+        # SSH
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+        # HTTP
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+
+  PublicIP:
+    Description: IP pública de la EC2
+    Value: !GetAtt MyEC2.PublicIp
